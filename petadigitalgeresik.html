@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Peta Digital Desa Geresik</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --blue:#1c3f73;
+    --blue-deep:#122a52;
+    --green:#3f9161;
+    --green-deep:#1b5e20;
+    --gold:#c8a12c;
+    --gold-deep:#8f7112;
+    --pink:#d9508c;
+    --pink-deep:#a33060;
+    --cream:#f5f3ec;
+    --ink:#182430;
+    --ink-soft:#5a6472;
+    --line:#e3e0d6;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  body{
+    font-family:'Inter', system-ui, sans-serif;
+    color:var(--ink);
+    background:var(--cream);
+    height:100vh;
+    width:100vw;
+    overflow:hidden;
+  }
+
+  /* ---------- APP SHELL ---------- */
+  .app{
+    display:grid;
+    grid-template-columns: 400px 1fr;
+    grid-template-rows: auto 1fr;
+    height:100vh;
+    width:100vw;
+  }
+
+  /* ---------- TOP BANNER ---------- */
+  .banner{
+    grid-column: 1 / -1;
+    background: linear-gradient(180deg, var(--blue) 0%, var(--blue-deep) 100%);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    padding:14px 20px;
+    position:relative;
+    z-index:1200;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
+
+  .banner .badge{
+    width:52px;
+    height:52px;
+    min-width:52px;
+    border-radius:50%;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--green-deep);
+    font-size:22px;
+    box-shadow: 0 0 0 3px var(--gold);
+  }
+
+  .banner .logo{
+    object-fit:contain;
+    padding:3px;
+    flex-shrink:0;
+  }
+
+  .banner .titles{
+    text-align:center;
+    min-width:0;
+  }
+
+  .banner h1{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:clamp(20px, 3vw, 30px);
+    letter-spacing:0.5px;
+    line-height:1;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+  }
+
+  .banner p{
+    margin-top:6px;
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:0.6px;
+    color:#d7e3f5;
+  }
+
+  .banner .tagline{
+    margin-top:5px;
+    font-size:12px;
+    font-weight:500;
+    letter-spacing:0.2px;
+    color:#fff;
+  }
+
+  .banner .location{
+    display:block;
+    white-space:nowrap;
+  }
+
+  .banner .location-line{
+    display:inline;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  #sidebar{
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    z-index:1100;
+    border-right: 1px solid var(--line);
+    min-height:0;
+  }
+
+  .tab-menu{
+    display:flex;
+    background:var(--cream);
+    border-bottom:1px solid var(--line);
+  }
+
+  .tab-btn{
+    flex:1;
+    padding:14px 6px 12px;
+    border:none;
+    background:#e7e4dc;
+    outline:none;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    transition: background 0.2s ease, color 0.2s ease;
+    border-bottom:3px solid transparent;
+  }
+
+  .tab-btn i{ font-size:17px; }
+
+  .tab-btn[data-cat="bumdes"]{ background:#e8f4eb; color:var(--green-deep); }
+  .tab-btn[data-cat="umkm"]{ background:#fff4d9; color:var(--gold-deep); }
+  .tab-btn[data-cat="layanan"]{ background:#fbe8f1; color:#8a1f52; }
+  .tab-btn:hover:not(.active){ filter:brightness(0.97); }
+
+  .tab-btn[data-cat="bumdes"].active{ background:#d2ebd9; color:var(--green-deep); border-bottom-color:var(--green); }
+  .tab-btn[data-cat="umkm"].active{ background:#f8e8b8; color:var(--gold-deep); border-bottom-color:var(--gold); }
+  .tab-btn[data-cat="layanan"].active{ background:#f4d1e0; color:#8a1f52; border-bottom-color:var(--pink); }
+
+  .tab-content{
+    flex-grow:1;
+    overflow-y:auto;
+    padding:16px;
+  }
+
+  .list-heading{
+    font-family:'Baloo 2', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+    letter-spacing:0.3px;
+  }
+
+  .card-item{
+    background:#f7f4eb;
+    border:1px solid #d9d4c7;
+    border-left:5px solid var(--accent, var(--green));
+    border-radius:8px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(24,36,48,0.08);
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+  }
+
+  .card-item:hover{
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+    transform: translateY(-1px);
+  }
+
+  .card-bumdes{ background:#eef8f0; }
+  .card-umkm{ background:#fff8e5; }
+  .card-layanan{ background:#fff0f6; }
+
+  .card-title{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .card-image{
+    width:170px;
+    min-width:170px;
+    height:130px;
+    object-fit:cover;
+    border-radius:6px;
+    display:block;
+  }
+
+  .card-gallery{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:5px;
+    margin-top:12px;
+    margin-bottom:10px;
+    scrollbar-width:thin;
+  }
+
+  .card-gallery .card-image{
+    margin-bottom:0;
+  }
+
+  .popup-image{
+    width:100%;
+    height:140px;
+    object-fit:cover;
+    border-radius:6px;
+    margin-bottom:8px;
+    display:block;
+  }
+
+  .image-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    background:rgba(10,18,28,0.88);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  .image-modal.open{ display:flex; }
+
+  .image-modal img{
+    max-width:92vw;
+    max-height:86vh;
+    object-fit:contain;
+    border-radius:8px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  }
+
+  .image-modal-close{
+    position:absolute;
+    top:14px;
+    right:20px;
+    border:none;
+    background:rgba(255,255,255,0.15);
+    color:#fff;
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    font-size:28px;
+    line-height:1;
+    cursor:pointer;
+  }
+
+  .card-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:5px;
+    line-height:1.45;
+  }
+
+  .card-address{
+    font-size:11.5px;
+    color:#7b8794;
+    margin-top:8px;
+    line-height:1.4;
+    display:flex;
+    gap:5px;
+  }
+  .card-address i{ margin-top:2px; }
+
+  .card-note{
+    font-size:11.5px;
+    color:#a3661a;
+    background:#fdf1e0;
+    border-radius:6px;
+    padding:6px 8px;
+    margin-top:8px;
+    display:flex;
+    gap:6px;
+    align-items:flex-start;
+    line-height:1.4;
+  }
+
+  .popup-note{
+    margin-top:6px;
+    font-size:11px;
+    color:#a3661a;
+    background:#fdf1e0;
+    border-radius:5px;
+    padding:5px 7px;
+  }
+
+  .popup-link{
+    display:inline-block;
+    margin-top:8px;
+    font-size:12px;
+    font-weight:700;
+    color:var(--blue);
+    text-decoration:none;
+  }
+  .popup-link:hover{ text-decoration:underline; }
+
+  .footer-credit{
+    padding:10px 16px;
+    text-align:center;
+    font-size:11px;
+    font-weight:600;
+    color:#fff;
+    background:var(--blue-deep);
+    letter-spacing:0.3px;
+  }
+
+  /* ---------- MAP ---------- */
+  #map{
+    width:100%;
+    height:100%;
+    min-height:0;
+  }
+
+  .marker-pin{
+    width:32px;
+    height:32px;
+    border-radius:50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    border:2px solid #fff;
+  }
+  .marker-pin i{ transform: rotate(45deg); color:#fff; font-size:13px; }
+  .marker-bumdes{ background:var(--green); }
+  .marker-umkm{ background:var(--gold); }
+  .marker-layanan{ background:var(--pink); }
+
+  .popup-title{ font-family:'Baloo 2', sans-serif; font-size:14px; color:var(--ink); font-weight:700; }
+  .popup-desc{ margin-top:5px; font-size:12px; color:var(--ink-soft); line-height:1.4; }
+  /* ---------- RESPONSIVE: MOBILE ---------- */
+  @media (max-width: 820px){
+    .app{
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto;
+    }
+    .banner{
+      display:grid;
+      grid-template-columns:36px minmax(0, 1fr) 36px;
+      gap:8px;
+      padding:10px 8px;
+      width:100%;
+      min-height:76px;
+    }
+    .banner .titles{ width:100%; }
+    .banner h1{ font-size:17px; }
+    .banner p{ font-size:8.5px; letter-spacing:0.2px; line-height:1.25; }
+    .banner .tagline{ font-size:9.5px; letter-spacing:0; }
+    .banner .location{ font-size:7.5px; letter-spacing:0; }
+    .banner .badge{ width:36px; height:36px; min-width:36px; font-size:15px; }
+
+    #map{
+      order:1;
+      height:100%;
+    }
+    #sidebar{
+      order:2;
+      max-height:44vh;
+      border-right:none;
+      border-top:1px solid var(--line);
+      border-radius:16px 16px 0 0;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+    }
+    #sidebar::before{
+      content:"";
+      display:block;
+      width:44px;
+      height:4px;
+      background:var(--line);
+      border-radius:4px;
+      margin:8px auto 0;
+    }
+    .footer-credit{
+      display:block;
+      padding:8px 10px;
+      font-size:10px;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- BANNER -->
+  <div class="banner">
+    <img class="badge logo" src="foto/logo-kkm.png" alt="Logo KKM Kelompok 25 Desa Geresik">
+    <div class="titles">
+      <h1>Peta Digital</h1>
+      <p class="tagline">Visualisasi Potensi BUMDes, UMKM &amp; Layanan Publik</p>
+      <p class="location"><span class="location-line">DESA GERESIK &nbsp;·&nbsp; KECAMATAN CIAWIGEBANG</span>&nbsp;·&nbsp;<span class="location-line">KABUPATEN KUNINGAN</span></p>
+    </div>
+    <img class="badge logo" src="foto/logo-umc.png" alt="Logo Universitas Muhammadiyah Cirebon">
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="tab-menu">
+      <button class="tab-btn active" data-cat="bumdes" onclick="switchTab('bumdes', this)">
+        <i class="fa-solid fa-building-columns"></i> BUMDes
+      </button>
+      <button class="tab-btn" data-cat="umkm" onclick="switchTab('umkm', this)">
+        <i class="fa-solid fa-store"></i> UMKM
+      </button>
+      <button class="tab-btn" data-cat="layanan" onclick="switchTab('layanan', this)">
+        <i class="fa-solid fa-hand-holding-hand"></i> Layanan Desa
+      </button>
+    </div>
+
+    <div class="tab-content" id="list-container"></div>
+
+    <div class="footer-credit">
+      Developed by KKM 25 UMC x Desa Geresik
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+</div>
+
+<div class="image-modal" id="image-modal" onclick="closeImageZoom(event)">
+  <button class="image-modal-close" type="button" onclick="closeImageZoom(event)" aria-label="Tutup foto">&times;</button>
+  <img id="image-modal-preview" src="" alt="Foto diperbesar">
+</div>
+
+<script>
+  var map = L.map('map', { zoomControl:false }).setView([-6.9877, 108.6085], 15);
+  L.control.zoom({ position:'bottomright' }).addTo(map);
+
+  L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  var categoryMeta = {
+    bumdes:  { color:'var(--green)', className:'marker-bumdes',  icon:'fa-building-columns', label:'BUMDes' },
+    umkm:    { color:'var(--gold)',  className:'marker-umkm',    icon:'fa-store',            label:'UMKM' },
+    layanan: { color:'var(--pink)',  className:'marker-layanan', icon:'fa-hand-holding-hand', label:'Layanan Desa' }
+  };
+
+  var dataMaster = {
+    bumdes: [
+      { nama:"Pertanian BUMDes", lat:-6.985977423328412, lng:108.6012494274339,
+        deskripsi:"Area pengelolaan lahan pertanian milik BUMDes Desa Geresik.",
+        gambarUtama:"foto/bumdes/pertanian/pertanianhome.jpg",
+        gambar:["foto/bumdes/pertanian/pertanian-1.jpg", "foto/bumdes/pertanian/pertanian-2.jpg", "foto/bumdes/pertanian/pertanian-3.jpg", "foto/bumdes/pertanian/pertanian-4.jpg"] },
+      { nama:"Peternakan BUMDes", lat:-6.984441417172558, lng:108.60119738913157,
+        deskripsi:"Unit usaha peternakan yang dikelola BUMDes Nanjung.",
+        gambarUtama:"foto/bumdes/peternakan/peternakanhome.jpg",
+        gambar:["foto/bumdes/peternakan/peternakan-1.jpg", "foto/bumdes/peternakan/peternakan-2.jpg"] },
+    ],
+    umkm: [
+      { nama:"Wisata Jambu Kristal Pak Kebon", lat:-6.98595508731257, lng:108.60049240882452,
+        alamat:"Wisata Petik Jambu Kristal Geresik Ciawigebang, 2J72+M78, Jl. Raya Kojengkang Desa Geresik, Geresik, Kec. Ciawigebang, Kabupaten Kuningan, Jawa Barat 45591",
+        deskripsi:"Wisata petik jambu kristal, salah satu UMKM unggulan Desa Geresik.",
+        gambarUtama:"foto/umkm/jambu/jambuhome.jpg",
+        gambar:["foto/umkm/jambu/jambu-1.jpg", "foto/umkm/jambu/jambu-2.jpg", "foto/umkm/jambu/jambu-3.jpg", "foto/umkm/jambu/jambu-4.jpg", "foto/umkm/jambu/jambu-5.jpg"] },
+      { nama:"Gumolong Farm", lat:-6.9945141153694905, lng:108.60917318612329,
+        alamat:"Gumolong Farm, 2J45+5M, Dusun Gumolong, Geresik, Kec. Ciawigebang, Kabupaten Kuningan, Jawa Barat 45591",
+        deskripsi:"Usaha pertanian dan peternakan warga di Dusun Gumolong.",
+        gambarUtama:"foto/umkm/gumolong/gumolonghome.jpg",
+        gambar:["foto/umkm/gumolong/gumolong-1.jpg", "foto/umkm/gumolong/gumolong-2.jpg", "foto/umkm/gumolong/gumolong-3.jpg", "foto/umkm/gumolong/gumolong-4.jpg", "foto/umkm/gumolong/gumolong-5.jpg", "foto/umkm/gumolong/gumolong-6.jpg", "foto/umkm/gumolong/gumolong-7.jpg"] },
+      { nama:"Kremes Ubi (KREBI) Ibu Rofi", lat:-6.987200, lng:108.604300,
+        alamat:"KREBI (Kremes Ubi), Dusun Manis RT 006 RW 004, Dusun Manis, Geresik, Kec. Ciawigebang, Kabupaten Kuningan, Jawa Barat 45591",
+        deskripsi:"Produksi camilan kremes ubi (KREBI) khas Dusun Manis.",
+        gambarUtama:"foto/umkm/krebi/krebihome.jpg",
+        gambar:["foto/umkm/krebi/krebi-1.jpg", "foto/umkm/krebi/krebi-2.jpg", "foto/umkm/krebi/krebi-3.jpg", "foto/umkm/krebi/krebi-4.jpg", "foto/umkm/krebi/krebi-5.jpg", "foto/umkm/krebi/krebi-6.jpg"],
+        catatan:"Lokasi mengikuti alamat Dusun Manis; titik peta masih berupa perkiraan." },
+      { nama:"UMKM Kelompok PKK", lat:-6.9859622299283, lng:108.60070839083224,
+        deskripsi:"Unit usaha PKK, berlokasi satu kawasan dengan Wisata Petik Jambu Kristal.",
+        gambarUtama:"foto/umkm/pkk/pkkhome.jpg",
+        gambar:["foto/umkm/pkk/pkk-1.jpg", "foto/umkm/pkk/pkk-2.jpg", "foto/umkm/pkk/pkk-3.jpg", "foto/umkm/pkk/pkk-4.jpg"] },
+      { nama:"Kue Kembang Goyang Seroja", lat:-6.9845936, lng:108.6100234,
+        alamat:"2J86+526 Oleh-Oleh Khas Kuningan Mila Seroja, Jl. Jendral Sudirman Dusun Pon Jl. Jaga Mulya, RT.03/RW.07, Geresik, Kec. Ciawigebang, Kabupaten Kuningan, Jawa Barat 45591",
+        mapsQuery:"Oleh - Oleh Khas Kuningan Mila Seroja, 2J86+526, Jl. Jendral Sudirman Dusun Pon, RT.03/RW.07, Geresik, Kec. Ciawigebang, Kabupaten Kuningan, Jawa Barat 45591",
+        deskripsi:"UMKM kue kembang goyang Seroja Desa Geresik.",
+        gambarUtama:"foto/umkm/seroja/serojahome.jpg",
+        gambar:["foto/umkm/seroja/seroja-1.jpg", "foto/umkm/seroja/seroja-2.jpg", "foto/umkm/seroja/seroja-3.jpg"],
+        catatan:"Lokasi mengikuti listing Oleh-Oleh Khas Kuningan Mila Seroja." },
+      { nama:"UMKM Seeng Bapak Eden", lat:-6.983216, lng:108.612358,
+        deskripsi:"UMKM kerajinan seeng milik Bapak Eden.",
+        gambarUtama:"foto/umkm/seeng/seenghome.jpg",
+        gambar:["foto/umkm/seeng/seeng-1.jpg", "foto/umkm/seeng/seeng-2.jpg", "foto/umkm/seeng/seeng-3.jpg", "foto/umkm/seeng/seeng-4.jpg", "foto/umkm/seeng/seeng-5.jpg", "foto/umkm/seeng/seeng-6.jpg", "foto/umkm/seeng/seeng-7.jpg"] }
+    ],
+    layanan: [
+      { nama:"Pengolahan Sampah", lat:-6.985420, lng:108.598588,
+        deskripsi:"Lokasi pengolahan sampah desa yang menjadi bagian dari layanan kebersihan dan pengelolaan lingkungan.",
+        gambarUtama:"foto/layanan-desa/sampah/sampahhome.jpg",
+        gambar:["foto/layanan-desa/sampah/sampah-1.jpg", "foto/layanan-desa/sampah/sampah-2.jpg", "foto/layanan-desa/sampah/sampah-3.jpg"] },
+      { nama:"Balai Desa Geresik", lat:-6.987199119227995, lng:108.60863513385452,
+        alamat:"Balai Desa Geresik, Kec. Ciawigebang, Kabupaten Kuningan, Jawa Barat 45591",
+        deskripsi:"Pusat layanan administrasi, koordinasi, dan kegiatan pemerintahan desa.",
+        gambarUtama:"foto/layanan-desa/balaidesa/balaidesahome.jpg",
+        gambar:["foto/layanan-desa/balaidesa/balaidesa-1.jpg", "foto/layanan-desa/balaidesa/balaidesa-2.jpg", "foto/layanan-desa/balaidesa/balaidesa-3.jpg", "foto/layanan-desa/balaidesa/balaidesa-4.jpg"] }
+    ]
+  };
+
+  var activeMarkers = [];
+
+  function makeIcon(cat){
+    var meta = categoryMeta[cat];
+    var html = '<div class="marker-pin ' + meta.className + '"><i class="fa-solid ' + meta.icon + '"></i></div>';
+    return L.divIcon({ html: html, className:'', iconSize:[32,32], iconAnchor:[16,32], popupAnchor:[0,-30] });
+  }
+
+  function getImages(item){
+    if (!item.gambar) return [];
+    return Array.isArray(item.gambar) ? item.gambar : [item.gambar];
+  }
+
+  function getPrimaryImage(item){
+    return item.gambarUtama || getImages(item)[0] || '';
+  }
+
+  function openImageZoom(src, altText){
+    var modal = document.getElementById('image-modal');
+    var preview = document.getElementById('image-modal-preview');
+    preview.src = src;
+    preview.alt = altText || 'Foto diperbesar';
+    modal.classList.add('open');
+  }
+
+  function closeImageZoom(event){
+    if (event.target.id === 'image-modal' || event.target.classList.contains('image-modal-close')){
+      document.getElementById('image-modal').classList.remove('open');
+    }
+  }
+
+  function switchTab(kategori, btnEl){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+
+    activeMarkers.forEach(m => map.removeLayer(m));
+    activeMarkers = [];
+
+    var container = document.getElementById('list-container');
+    container.innerHTML = '';
+
+    var meta = categoryMeta[kategori];
+    var heading = document.createElement('div');
+    heading.className = 'list-heading';
+    heading.textContent = meta.label + ' · ' + dataMaster[kategori].length + ' lokasi';
+    container.appendChild(heading);
+
+    dataMaster[kategori].forEach(function(item){
+      var marker = L.marker([item.lat, item.lng], { icon: makeIcon(kategori) }).addTo(map);
+      var gmapsQuery = item.mapsQuery || (item.alamat ? (item.nama + ', ' + item.alamat) : (item.lat + ',' + item.lng));
+      var gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(gmapsQuery);
+      var images = getImages(item);
+      var primaryImage = getPrimaryImage(item);
+      var popupImageHTML = primaryImage ? '<img class="popup-image" src="' + primaryImage + '" alt="Foto utama ' + item.nama + '">' : '';
+      var popupHTML =
+        '<div style="text-align:center; max-width:220px;">' +
+          popupImageHTML +
+          '<div class="popup-title">' + item.nama + '</div>' +
+          '<a class="popup-link" href="' + gmapsUrl + '" target="_blank" rel="noopener">Buka di Google Maps</a>' +
+        '</div>';
+      marker.bindPopup(popupHTML);
+      activeMarkers.push(marker);
+
+      var card = document.createElement('div');
+      card.className = 'card-item card-' + kategori;
+      card.style.setProperty('--accent', meta.color);
+      var cardGalleryHTML = images.length ? '<div class="card-gallery">' + images.map(function(src){
+        return '<img class="card-image" src="' + src + '" alt="Foto ' + item.nama + '" onclick="openImageZoom(this.src, this.alt); event.stopPropagation();">';
+      }).join('') + '</div>' : '';
+      card.innerHTML =
+        '<div class="card-title">' + item.nama + '</div>' +
+        '<div class="card-desc">' + item.deskripsi + '</div>' +
+        cardGalleryHTML;
+
+      card.onclick = function(){
+        map.flyTo([item.lat, item.lng], 17, { duration: 1.1 });
+        marker.openPopup();
+      };
+
+      container.appendChild(card);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    switchTab('bumdes', document.querySelector('.tab-btn[data-cat="bumdes"]'));
+
+    var allPoints = [];
+    Object.keys(dataMaster).forEach(function(cat){
+      dataMaster[cat].forEach(function(item){ allPoints.push([item.lat, item.lng]); });
+    });
+    if (allPoints.length){
+      map.fitBounds(allPoints, { padding:[40,40], maxZoom:16 });
+    }
+
+    setTimeout(function(){ map.invalidateSize(); }, 200);
+  });
+
+  window.addEventListener('resize', function(){ map.invalidateSize(); });
+</script>
+
+</body>
+</html>
